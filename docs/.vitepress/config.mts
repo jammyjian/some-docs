@@ -31,10 +31,10 @@ type SidebarItem = { text: string; link?: string; items?: SidebarItem[] }
 type RawFile = { text: string; link: string; _readme: boolean }
 type DirNode = { top?: string; seg: string; files: RawFile[]; children: Map<string, DirNode> }
 
-// 顶层目录的展示名
+// 顶层目录的展示名（键是源目录名；不登记则回退到该目录下 README 的标题）
 const TOP_LABELS: Record<string, string> = {
   any: '调研',
-  electrician: '低压电工考证',
+  电工知识: '低压电工考证',
 }
 
 // 目录段展示名：如 "01-Chapter 1-安全生产法律法规" -> "第 1 章 安全生产法律法规"

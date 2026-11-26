@@ -39,15 +39,37 @@ function slugify(base) {
 }
 
 // 目录路径逐段转 slug：
-// "low-voltage electrician/01-Chapter 1-安全生产法律法规" -> "low-voltage-electrician/01-chapter-1-an-quan-sheng-chan-fa-l-fa-gui"
+// "01-Chapter 1-安全生产法律法规" -> "01-chapter-1-an-quan-sheng-chan-fa-l-fa-gui"
 function slugifyDir(relDir) {
   if (relDir === '.' || relDir === '') return ''
   return relDir.split('/').map((seg) => slugify(seg)).join('/')
 }
 
+// 源目录 -> 对外路由前缀（不参与拼音化）。
+// 源目录改名后，在这里钉死旧路由，已发布的 URL 就不会变；新增目录不必登记。
+const DIR_ROUTE_OVERRIDES = {
+  '电工知识': 'electrician',
+  '电工知识/《低压电工考证学习文档》': 'electrician/low-voltage-electrician',
+  '电工知识/《低压电工考证学习文档》/14-Chapter 14-实操考核': 'electrician/low-voltage-electrician/14-chapter-14-shi-cao-kao-he-yu-ying-shi-ji-qiao',
+}
+
+// 取最深的匹配前缀，剩余层级仍走拼音：
+// "电工知识/《低压电工考证学习文档》/01-Chapter 1-..." -> "electrician/low-voltage-electrician/01-chapter-1-..."
+function routeDir(relDir) {
+  if (relDir === '.' || relDir === '') return ''
+  let best = ''
+  for (const src of Object.keys(DIR_ROUTE_OVERRIDES)) {
+    if ((relDir === src || relDir.startsWith(`${src}/`)) && src.length > best.length) best = src
+  }
+  if (!best) return slugifyDir(relDir)
+  const rest = relDir.slice(best.length).replace(/^\//, '')
+  return rest ? `${DIR_ROUTE_OVERRIDES[best]}/${slugifyDir(rest)}` : DIR_ROUTE_OVERRIDES[best]
+}
+
 function gitTime(abs) {
   try {
-    const out = execFileSync('git', ['log', '-1', '--format=%at', '--', abs], {
+    // --follow 让文件在目录改名后仍沿用原有的提交历史
+    const out = execFileSync('git', ['log', '-1', '--follow', '--format=%at', '--', abs], {
       cwd: ROOT,
       stdio: ['ignore', 'pipe', 'ignore'],
     })
@@ -71,7 +93,7 @@ export function prepare() {
   for (const abs of files) {
     const rel = toPosix(path.relative(SRC, abs))
     const relDir = path.posix.dirname(rel)
-    const genDir = slugifyDir(relDir)
+    const genDir = routeDir(relDir)
     const filename = path.basename(rel)
 
     let slug
@@ -90,7 +112,8 @@ export function prepare() {
     const title = (content.match(/^#\s+(.+)$/m) || [])[1]?.trim() || filename
     // VitePress 的 lastUpdated 使用毫秒时间戳；git log 返回秒，需换算
     const t = gitTime(abs)
-    const lastUpdated = t ? t * 1000 : Math.floor(fs.statSync(abs).mtimeMs)
+    // git 查不到历史（如目录刚改名、尚未提交）时沿用上次登记的时间，避免整站时间变成今天
+    const lastUpdated = t ? t * 1000 : (oldMap[rel]?.lastUpdated ?? Math.floor(fs.statSync(abs).mtimeMs))
 
     // route = 生成后的相对路径（不含 .md），如 "any/chong-qing-opc-she-qu-diao-yan"
     const route = genDir ? `${genDir}/${slug}` : slug
@@ -128,7 +151,8 @@ export function prepare() {
       if (decoded.startsWith('./')) decoded = decoded.slice(2)
       if (decoded === '') return full
       const noExt = decoded.replace(/\.md$/, '')
-      const candidate = srcDir === '.' ? noExt : `${srcDir}/${noExt}`
+      // 归一化 ../ 与 ./，否则跨章节的相对链接匹配不到 newMap 的 key
+      const candidate = path.posix.normalize(srcDir === '.' ? noExt : `${srcDir}/${noExt}`)
       const route = newMap[`${candidate}.md`]?.route
       if (!route) return full
       return full.replace(dest, `/${route}${hash}`)

@@ -11,7 +11,10 @@ hero:
       link: /any/重庆OPC社区调研
     - theme: alt
       text: 低压电工考证学习文档
-      link: /electrician/low-voltage electrician/README.md
+      link: /电工知识/《低压电工考证学习文档》/README.md
+    - theme: alt
+      text: 苹果开发者账号申请
+      link: /any/苹果开发者账号申请文档
 
 features:
   - title: 调研报告

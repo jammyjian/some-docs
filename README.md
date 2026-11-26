@@ -18,8 +18,8 @@ some-docs/
 │  ├─ index.md                    # 首页
 │  ├─ any/                        # 调研文档
 │  │  └─ 重庆OPC社区调研.md
-│  ├─ electrician/                # 低压电工考证学习文档
-│  │  └─ low-voltage electrician/ # 目录名同样支持中文/空格，构建时自动转拼音
+│  ├─ 电工知识/                    # 电工类文档
+│  │  └─ 《低压电工考证学习文档》/   # 目录名支持中文/空格/书名号，构建时自动转拼音
 │  │     ├─ README.md             # 课程首页（H1 为「低压电工考证学习文档」）
 │  │     └─ 01-Chapter 1-安全生产法律法规/
 │  │        ├─ README.md          # 章节页（H1 会作为侧边栏章节标题）
@@ -74,13 +74,14 @@ npm run docs:dev
 
 **URL 规则：**
 
-- 文件名和**目录名**都会由 `prepare.mjs` 转成拼音 slug，例如 `成都AI社区调研.md` → `/any/cheng-du-ai-she-qu-diao-yan`，目录 `low-voltage electrician` → `low-voltage-electrician`。
+- 文件名和**目录名**都会由 `prepare.mjs` 转成拼音 slug，例如 `成都AI社区调研.md` → `/any/cheng-du-ai-she-qu-diao-yan`，目录 `《低压电工考证学习文档》` → `di-ya-dian-gong-kao-zheng-xue-xi-wen-dang`。
+- **目录改名不换 URL**：`scripts/prepare.mjs` 里的 `DIR_ROUTE_OVERRIDES` 把源目录钉到指定路由前缀。`电工知识/《低压电工考证学习文档》` 已钉成 `electrician/low-voltage-electrician`，所以目录随便改名，已发布 URL 都不变。新增目录不必登记，走拼音即可。
 - **正文链接自动改写**：文档里可以放心写中文文件名的链接——同目录/子目录的相对链接（`](13.1-xxx.md)`、`](01-Chapter 1-xxx/README.md)`）以及绝对源路由（`/any/成都AI社区调研.md`）都会在构建时改写成 slug 路由。
 - 想自定义 URL，编辑 `docs/.vitepress/url-map.json` 中对应条目的 `slug` 字段后重新构建即可。
 - 已登记过的文件会复用原 slug，URL 不会因构建而变动。
-- 如果以后重命名了中文文件名，slug 会重新生成，旧 URL 将失效。
+- 如果以后重命名了中文文件名，slug 会重新生成，旧 URL 将失效；重命名**目录**则不受影响（有 `DIR_ROUTE_OVERRIDES` 兜底）。
 
-**侧边栏结构：** 按源目录树自动生成。顶层目录作为一组（如 `any` →「调研」、`electrician` →「低压电工考证」）；目录内的 `README.md` 作为该目录的标题与入口，章节可嵌套课时。首页顶部入口按钮指向 `docs/electrician/low-voltage electrician/README.md`，在 `docs/index.md` 的 `hero.actions` 里维护。
+**侧边栏结构：** 按源目录树自动生成。顶层目录作为一组（如 `any` →「调研」、`电工知识` →「低压电工考证」）；目录内的 `README.md` 作为该目录的标题与入口，章节可嵌套课时。首页顶部入口按钮指向 `docs/电工知识/《低压电工考证学习文档》/README.md`，在 `docs/index.md` 的 `hero.actions` 里维护。
 
 ## 发布流程
 
